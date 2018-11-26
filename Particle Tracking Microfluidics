@@ -1,0 +1,127 @@
+    MinDist = 30;
+	Thresh = 215;
+	Img_width = 968;
+	Img_height = 728;
+	uRate_max = 2.1;
+	uRate_inv = 0.3;
+	Ave_h=255;
+	//MinArea = XXX;
+	
+
+	run("Close All");
+	run("Set Measurements...", "area mean min centroid redirect=None decimal=2");
+	
+
+//__________________________________________________________________________________________________________________________________________//
+	
+	dir1 = getDirectory("Choose Source Directory ");
+	list = getFileList(dir1);
+	dir2 = dir1+"\\Results";
+	File.makeDirectory(dir2);
+	
+	for (loop_n=0; loop_n<list.length-1; loop_n++) {
+		if(isOpen("Results")){
+			selectWindow("Results");	
+			run("Close");
+			}
+		roiManager("reset");
+		run("Close All");
+		print(list[loop_n]);
+		open(dir1+"\\"+list[loop_n]);
+		nROI_pre= roiManager("count"); 
+		open(dir1+"\\"+list[loop_n+1]);
+		nROI_post= roiManager("count"); 
+		nROI_diff= nROI_post-nROI_pre;
+	    newImage("Empty", "8-bit white", Img_width,Img_height, 1); 
+	    ROI_Measure();
+	
+	    selectWindow("Empty"); 
+		run("Close");
+	    
+	    Best_Ave = newArray(nROI_diff);
+		Correspondence = newArray(nROI_diff);
+	
+//__________________________________________________________________________________________________________________________________________//
+		
+		for (i=0; i<nROI_diff; i++) {   // 
+			X= getResult("X", nROI_pre+i);
+			Y= getResult("Y", nROI_pre+i);
+		  
+			  for (n=0; n<nROI_pre; n++) {
+				  Xn= getResult("X",n);
+				  Yn= getResult("Y",n);
+				  Dist = sqrt(pow(X-Xn,2)+pow(Y-Yn,2));
+					if (Dist < MinDist) {
+						newImage("Mask", "8-bit white", Img_width,Img_height, 1); 
+						roiManager("Select", n);
+						run("Fill");
+						roiManager("Select", nROI_pre+i);
+						run("Measure");
+						Ave= getResult("Mean", nResults-1); 
+						Area_pre= getResult("Area", n);
+						Area_post= getResult("Area", nROI_pre+i);
+							if (Ave!=255){
+								print("La mean misurata tra la ROI "+(n+1)+" della prima immagine e la ROI "+(i+1)+" della seconda immagine e "+Ave+"");
+							}
+						
+						selectWindow("Mask"); 
+						run("Close");
+							//if (Area > MinArea){
+							uRate= Area_post/Area_pre;
+							if (Ave!=255 && uRate < uRate_max && uRate > uRate_inv && Ave < Ave_h ) {
+								//if (Ave < Ave_h){
+									print("1.  Ave = "+Ave+ "    Ave_h = "+Ave_h+"");
+									Ave_h=Ave;
+									print("2.  Ave = "+Ave+ "    Ave_h = "+Ave_h+"");
+									Best_Ave[i]=Ave_h;
+									Correspondence[i]=n+1;
+									print("		Ho unito "+(n+1)+" della prima immagine e  "+(i+1)+" della seconda immagine per via di Ave = "+Ave+"");
+									
+								//}
+	                		}
+					//} else {what}
+			  }
+		   }
+		   Ave_h=255;
+		}
+			
+			Results = newArray(2); 
+			//setResult("sep=;",0,0)
+			Results[0]="sep=;";				
+			Results[1]="Object;Corresponding;Mean_Gray";
+			ResultsArray=newArray(nROI_diff);		
+			
+			for (o=0; o<nROI_diff; o++) {
+				Best_Ave_p=Best_Ave[o];
+				//print(Best_Ave_p);
+				Correspondence_p=Correspondence[o];
+				//print(Correspondence_p);
+				ResultsArray[o] = ""+o+1+";"+Correspondence_p+";"+Best_Ave_p+";";
+				}
+	
+			Results = Array.concat(Results,ResultsArray);
+			Array.show("Results",Results);
+			saveAs("Results", dir2+"\\Results"+(loop_n+1)+"_"+(loop_n+2)+".txt");	
+			
+	}		
+	
+waitForUser("Done!!!");
+//__________________________________________________________________________________________________________________________________________//
+
+function ROI_Measure() {
+    nROI= roiManager("count");   
+	    for (n=0; n<nROI; n++) { 
+	    roiManager("Select", n); // ROI is selected
+	    run("Measure"); // and measured
+	    } 
+}
+
+function Make_Mask() {
+    nROI= roiManager("count"); 
+    newImage("Mask", "8-bit white", 968, 728, 1);
+	setForegroundColor(0, 0, 0); 
+        for (n=0; n<nROI; n++) { 
+	    roiManager("Select", n); // ROI is selected
+	    run("Fill"); // and measured
+	    } 
+}
