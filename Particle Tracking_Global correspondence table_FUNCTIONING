@@ -1,0 +1,206 @@
+//___________________________________________________________________________________________________________________________________________________________________//
+			//INIZIALIZATION
+
+print("\\Clear");
+dir1 = getDirectory("Choose Source Directory ");
+dir2 = dir1+"\\Adjusted comparison tables";
+dir3 = dir1+"\\Assembled table for particle tracking";
+File.makeDirectory(dir2);
+File.makeDirectory(dir3);
+list = getFileList(dir1);
+
+n_ResultsFiles=0;    																   // The number of result files is calculated. It will be equal to the number of columns 
+	 for(i=0; i<list.length; i++) {													   // in the final table
+	 	if (endsWith(list[i],".txt")) {
+	 	 	 n_ResultsFiles=n_ResultsFiles+1;
+	 	}
+ 	 }
+nRows_Array=newArray(n_ResultsFiles);												  // Array is created to store the number of rows of the various files
+	for(i=0; i<n_ResultsFiles; i++) {                                                 // ..and filled
+		filestring=File.openAsString(dir1+"\\Results_"+(i)+"_"+(i+1)+".txt"); 
+		rows=split(filestring, "\n"); 
+		nRows_Array[i]=rows.length-2;
+	}
+
+filestring=File.openAsString(dir1+"\\Results_"+(n_ResultsFiles-1)+"_"+(n_ResultsFiles)+".txt");  // The file corresponding to the last time points is opened 
+rows=split(filestring, "\n");                                                                    //  to get the number of rows in the final table
+nRows_FinalTable=rows.length-2;  														// Gets rid of the "Value" and Header row
+nRows_FinalTable=nRows_FinalTable+1 													// One row added for header Header!!!! // Sure abt this??
+
+filestring=File.openAsString(dir1+"\\Results_0_1.txt"); 		  // The file corresponding to the first time point is opened
+rows=split(filestring, "\n"); 									  // ..to get the number of rows in the first column of the final table
+n_Rows=rows.length-2;											  // Actual number of rows is calculated by removing the two header rows
+ROI_post=newArray(n_Rows);										  // New arrays are created to store the values from the comparison file
+ROI_pre=newArray(n_Rows);										  
+
+for (i=0; i<n_Rows; i++) { 										  // The arrays are filled with data from the comparison file
+	columns=split(rows[i+2],";"); 								  // Value assignment starts at i+2, so that the header rows are not taken into account
+	ROI_post[i]=columns[0]; 									  // Values are assigned. NB! Values relative to the second frame (ROI_post) are stored in the 
+	ROI_pre[i]=columns[1]; 										  // ..first column, while those relative to the first frame (ROI_pre) are stored in the second one
+}
+n_NewBorn=0;													  // Calculates number of newborn cells in second frame 
+    for(i=0; i<n_Rows; i++) {
+		if (ROI_pre[i]==0) {
+			n_NewBorn=n_NewBorn+1;								  // The amount of newborn cells in the second frame equals the amount of ROI_pre values
+		}														  // .. equals to 0, so that of cells in the second frame which have no correspondence in 
+    }		
+nObj_FirstCol=n_Rows-n_NewBorn;								      // The number of ROIs in the first frame is calculated qnd stored for lqter
+//print("nRows_FinalTable   "+nRows_FinalTable);
+//print("nColumns_FinalTable   "+nColumns_FinalTable);
+//print("nObj_FirstCol  "+nObj_FirstCol);
+
+//___________________________________________________________________________________________________________________________________________________________________//
+			//INITIALIZE TABLE
+
+header = "";
+for (n=0; n<n_ResultsFiles+1; n++) {   								 // Header dor result table is created according to number result files being used
+	header_add = "Time_"+n+";";
+	header=header+header_add;
+	}
+Assembled_table_header = newArray(1); 
+Assembled_table_header[0]=header;
+Assembled_table_body= newArray(nRows_FinalTable); 	                 // Body of result table is initialized and the first "column" is filled according to 
+for (n=0; n<nRows_FinalTable; n++) {								 // ..the number of ROIs in the first frame (i=0)
+		if (n<nObj_FirstCol){
+			Assembled_table_body[n]=""+(n+1)+";";
+			} else {
+			Assembled_table_body[n]="0;";
+			}
+}
+header_corr_table_adj="ROI_post;ROI_pre";
+
+//___________________________________________________________________________________________________________________________________________________________________//
+			//FILL TABLE ASSEMBLY
+	
+for (n=0; n<n_ResultsFiles; n++) {
+		//print("\n______________________________________________________\n");  // LOG
+		if (n==0){															    // LOG
+		filestring=File.openAsString(dir1+"\\Results_"+n+"_"+n+1+".txt");       // Opens results file relative to first-second frame
+		} else {
+		filestring=File.openAsString(dir2+"\\Results_adj_"+n+"_"+n+1+".txt");   // Opens results files relative to all other comparisons (1_2, 2_3, 3_4 ...) 
+		}
+		//print("Results_"+n+"_"+n+1+".txt");
+		//print("______________________________________________________\n");
+		rows=split(filestring, "\n");									  // Splits rows
+		n_Rows=rows.length-2;											  // Actual number of rows is calculated by removing the two header rows
+		ROI_post=newArray(n_Rows);										  // New arrays are created to store the values from the comparison files
+		ROI_pre=newArray(n_Rows);										  
+		for (i=0; i<n_Rows; i++) { 										  // The arrays are filled with data from the comparison file
+			columns=split(rows[i+2],";"); 								  // Value assignment starts at i+2, so that the header rows are not taken into account
+			ROI_post[i]=columns[0]; 									  // Values are assigned. NB! Values relative to the second frame (ROI_post) are stored in the 
+			ROI_pre[i]=columns[1]; 										  // ..first column, while those relative to the first frame (ROI_pre) are stored in the second one
+			}
+		
+		n_NewBorn=0;													  // Calculates number of newborn cells in second frame 
+	    for(i=0; i<n_Rows; i++) {
+			if (ROI_pre[i]==0) {
+				n_NewBorn=n_NewBorn+1;									  // The amount of newborn cells in the second frame equals the amount of ROI_pre values
+			}														      // .. equals to 0, so that of cells in the second frame which have no correspondence in 
+	    }																  // .. the first one. This number is calculated here and assigned to the variable "n_NewBorn"														
+		n_NewBorn_copy=n_NewBorn;										  // For later use
+		Current_Column=newArray(nRows_FinalTable);						  // To be filled with strings (used to assemble final table)abs(n)
+	    Current_Column_values=newArray(nRows_FinalTable);				  // To be filled with valuese, cor comparisons and _adjusted datasets
+		for (i=0;i<nRows_FinalTable; i++) {							      // Here the table gets filled according to the equivalence presented above 
+				if (n==0){
+					if (i<n_Rows) {
+						for (ii=0;ii<n_Rows; ii++) {
+							if (ROI_pre[ii]==i+1) {
+								Current_Column[i]=""+ROI_post[ii]+";";
+								Current_Column_values[i]=ROI_post[ii];                       // For later comparisons
+								//print ("Normal__n= "+n+" n_Rows= "+n_Rows+" i= "+i+" ii =" +ii+ " n_NewBorn =" +n_NewBorn+ " ROI_post =" +ROI_post[ii]+ " ROI_pre=" +ROI_pre[ii]);
+							} else if (ROI_pre[ii]==0 && n_NewBorn>0 ) {
+								Current_Column[n_Rows-n_NewBorn]=""+ROI_post[ii]+";";
+								Current_Column_values[n_Rows-n_NewBorn]=ROI_post[ii];		// For later comparisons
+								n_NewBorn=n_NewBorn-1;	
+								//print ("Zero__n= "+n+" n_Rows= "+n_Rows+" i= "+i+" ii =" +ii+ " n_NewBorn =" +n_NewBorn+ " ROI_post =" +ROI_post[ii]+ " ROI_pre=" +ROI_pre[ii]);
+							}
+			    		} 
+		    		} else {
+						Current_Column[i]="0;";								// One all data from the current comparison file are used, the current column gets filled
+						} 													// .. with zeros.
+			       } else { 
+			       	if (i<n_Rows) {
+			       	for (ii=0;ii<n_Rows; ii++) {
+							if (ROI_pre[ii]==i+1) {
+								Current_Column[ii]=""+ROI_post[ii]+";";
+								Current_Column_values[ii]=ROI_post[ii];                       // For later comparisons
+								//print ("Normal__n= "+n+" n_Rows= "+n_Rows+" i= "+i+" ii =" +ii+ " n_NewBorn =" +n_NewBorn+ " ROI_post =" +ROI_post[ii]+ " ROI_pre=" +ROI_pre[ii]);
+							} else if (ROI_pre[ii]==0 && n_NewBorn>0 ) {
+								Current_Column[n_Rows-n_NewBorn]=""+ROI_post[ii]+";";
+								Current_Column_values[n_Rows-n_NewBorn]=ROI_post[ii];		// For later comparisons
+								n_NewBorn=n_NewBorn-1;	
+								//print ("Zero__n= "+n+" n_Rows= "+n_Rows+" i= "+i+" ii =" +ii+ " n_NewBorn =" +n_NewBorn+ " ROI_post =" +ROI_post[ii]+ " ROI_pre=" +ROI_pre[ii]);
+							}
+			    		} 
+		    		} else {
+						Current_Column[i]="0;";								// One all data from the current comparison file are used, the current column gets filled
+						} 
+			       }
+		}
+		/*print("Current_Column");
+		for (x=0;x<Current_Column.length; x++) {
+			print(Current_Column[x]);									         // LOG
+		}
+		print("Current_Column_Values");
+		for (x=0;x<Current_Column.length; x++) {
+			print(Current_Column_values[x]);									// LOG
+		}*/
+		for (i=0; i<Current_Column.length; i++) {						        // Current column (string form) is added to the assembled table
+			To_add=""+Current_Column[i];
+		   	Existing=""+Assembled_table_body[i];
+			Assembled_table_body[i]=Existing+To_add;
+		}
+		if (n<n_ResultsFiles-1) {
+			filestring=File.openAsString(dir1+"\\Results_"+n+1+"_"+n+2+".txt");
+			rows=split(filestring, "\n");									  // Splits rows
+			n_Rows_t=rows.length-2;	                                          // Actual number of rows is calculated by removing the two header rows
+			//print("Nrows_t ="+n_Rows_t);
+			ROI_post=newArray(n_Rows_t);									  // New arrays are created to store the values from the comparison files
+			ROI_pre=newArray(n_Rows_t);
+			for (i=0; i<n_Rows_t; i++) { 									  // The arrays are filled with data from the comparison file
+				columns=split(rows[i+2],";"); 								  // Value assignment starts at i+2, so that the header rows are not taken into account
+				ROI_post[i]=columns[0]; 									  // Values are assigned. NB! Values relative to the second frame (ROI_post) are stored in the 
+				ROI_pre[i]=columns[1]; 
+			}			
+	
+			n_NewBorn=0;													  // Calculates number of newborn cells in second frame 
+	   			 for(i=0; i<n_Rows_t; i++) {
+					if (ROI_pre[i]==0) {
+						n_NewBorn=n_NewBorn+1;								  // The amount of newborn cells in the second frame equals the amount of ROI_pre values
+					}														  // .. equals to 0, so that of cells in the second frame which have no correspondence in 
+	    	}
+	    	//print("n_NewBorn = "+n_NewBorn);
+			n_NewBorn_copy=n_NewBorn;
+			//print("Current_Column_NEW");
+			Current_Column_new=newArray(n_Rows_t);
+			for (i=0; i<n_Rows_t-n_NewBorn_copy; i++){
+				for (ii=0; ii<n_Rows_t; ii++){
+					if (ROI_pre[ii]==Current_Column_values[i]){
+						Current_Column_new[i]=""+ROI_post[ii]+";";
+						//print("Normal__ "+Current_Column_new[i]+"   i__ "+i+"   ii__ "+ii+"   ROI_pre[ii]__ "+ROI_pre[ii]+"  ROI_post[ii]__ "+ROI_post[ii]+" Current_Column_values[i]__ "+Current_Column_values[i]);
+					} else if (ROI_pre[ii]==0 && n_NewBorn>0) {
+						Current_Column_new[n_Rows_t-n_NewBorn]=""+ROI_post[ii]+";";
+						//print("Zero__ "+Current_Column_new[n_Rows_t-n_NewBorn]);
+						n_NewBorn=n_NewBorn-1;
+				    }
+				}
+			}	
+			/*for (i=0; i<n_Rows_t; i++){
+				print(Current_Column_new[i]);
+			}*/
+			Corr_table_adj=newArray(n_Rows_t);								
+			for (i=0; i<n_Rows_t; i++) {
+				Corr_table_adj[i]=""+Current_Column_new[i]+Current_Column_values[i];
+			}
+			Corr_table_adj_w_head = Array.concat(header_corr_table_adj,Corr_table_adj);
+			Array.show("Results_adj",Corr_table_adj_w_head);
+			saveAs("Results", dir2+"\\Results_adj_"+(n+1)+"_"+(n+2)+".txt");  // .. e lo salva
+			run("Close");
+		}
+}
+Assembled_table = Array.concat(Assembled_table_header,Assembled_table_body);
+Array.show("Results",Assembled_table);
+waitForUser("Done!!!");
+
+
+
