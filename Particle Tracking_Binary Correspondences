@@ -3,7 +3,7 @@
 	Img_width = 968;
 	Img_height = 728;
 	uRate_max = 2.1;
-	uRate_inv = 0.3;
+	uRate_inv = 0.3333;
 	Ave_h=255;
 	//MinArea = XXX;
 	#viva LA FIGAAAAg
