@@ -8,7 +8,7 @@ dir3 = dir1+"\\Assembled table for particle tracking";
 File.makeDirectory(dir2);
 File.makeDirectory(dir3);
 list = getFileList(dir1);
-
+# viva la figaaaaa
 n_ResultsFiles=0;    																   // The number of result files is calculated. It will be equal to the number of columns 
 	 for(i=0; i<list.length; i++) {													   // in the final table
 	 	if (endsWith(list[i],".txt")) {
