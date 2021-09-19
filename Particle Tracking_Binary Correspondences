@@ -6,7 +6,7 @@
 	uRate_inv = 0.3;
 	Ave_h=255;
 	//MinArea = XXX;
-	#viva LA FIGAAAA
+	#viva LA FIGAAAAg
 
 	run("Close All");
 	run("Set Measurements...", "area mean min centroid redirect=None decimal=2");
